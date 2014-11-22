@@ -1,6 +1,5 @@
 DDR4URHANDS
 ===========
-
 /*****************************TODO***********************************
   	 -Come up with a way of "generating" incoming arrows...
 	 -Find out how to expand it from 3 color bits (RGB) to 8 color bits (R0R1R2, G0G1G2, B0B1B2)
