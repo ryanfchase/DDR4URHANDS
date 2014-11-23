@@ -6,17 +6,17 @@
 
 
 
-module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, btnU, btnD, btnR, btnL,
+module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r0, vga_r1, vga_r2, vga_g, vga_b, Sw0, Sw1, btnU, btnD, btnR, btnL,
 	St_ce_bar, St_rp_bar, Mt_ce_bar, Mt_St_oe_bar, Mt_St_we_bar,
 	An0, An1, An2, An3, Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,
 	LD0, LD1, LD2, LD3, LD4, LD5, LD6, LD7);
 
 	input ClkPort, Sw0, btnU, btnD, btnR, btnL, Sw0, Sw1;
 	output St_ce_bar, St_rp_bar, Mt_ce_bar, Mt_St_oe_bar, Mt_St_we_bar;
-	output vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b;
+	output vga_h_sync, vga_v_sync, vga_r0, vga_r1, vga_r2, vga_g, vga_b;
 	output An0, An1, An2, An3, Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp;
 	output LD0, LD1, LD2, LD3, LD4, LD5, LD6, LD7;
-	reg vga_r, vga_g, vga_b;
+	reg vga_r0, vga_r1, vga_r2, vga_g, vga_b;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -50,10 +50,10 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, 
 	///////////////		VGA control starts here		/////////////////
 	/////////////////////////////////////////////////////////////////
 
-	/* VGA Range = X:{0, 640}, Y:{0:440}*/ //unsure of Y MAX...
+	/* VGA Range = X:{0, 640}, Y:{0,480}*/
 
 	/*****************************TODO***********************************
-  	 -Come up with a way of "generating" incoming arrows...
+  	-Come up with a way of "generating" incoming arrows...
 	 -Find out how to expand it from 3 color bits (RGB) to 8 color bits (R0R1R2, G0G1G2, B0B1B2)
 	 -write code that sends an arrow (currently box) upwards (i.e.: YPos = YPos - 10)
 	 -finish and test TASK that initializes target boxes
@@ -63,18 +63,18 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, 
 
 	/* Local Constants*/ 
 	localparam COLUMN_1 = 20;
-	localparam COLUMN_2 = 40;
-	localparam COLUMN_3 = 60;
-	localparam COLUMN_4 = 80;
+	localparam COLUMN_2 = 50;
+	localparam COLUMN_3 = 80;
+	localparam COLUMN_4 = 110;
 
 	localparam Y_TARGET = 40;
 
 	/* Registers */ //(NON BLOCKING)//
 
-	reg [9:0] leftButtonTarget;
-	reg [9:0] upButtonTarget;
-	reg [9:0] rightButtonTarget;
-	reg [9:0] downButtonTarget;
+	wire leftButtonTarget  = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_1-10) && CounterX <= (COLUMN_1+10));
+	wire upButtonTarget    = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_2-10) && CounterX <= (COLUMN_2+10));
+	wire rightButtonTarget = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_3-10) && CounterX <= (COLUMN_3+10));
+	wire downButtonTarget  = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_4-10) && CounterX <= (COLUMN_4+10));
 
 
 	reg [9:0] positionX;//remove
@@ -96,30 +96,62 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, 
 		output [9:0] color;     //color of the wire (corresponding to the VGA)
 		begin
 
-		color = color && 
-			(CounterY >= (Y_TARGET  -10) && CounterY <= (Y_TARGET  +10)) &&
-			(CounterX >= (targetBox -10) && CounterX <= (targetBox +10);
+		color = color || 
+			((CounterY >= (Y_TARGET  -10) && CounterY <= (Y_TARGET  +10)) &&
+			(CounterX >= (targetBox -10) && CounterX <= (targetBox +10)));
 
 		end
 	endtask
 
 	/******************** END TASKS ***********************/
-
 	
 	always @(posedge DIV_CLK[21])
 	begin
-	
+	/* VGA Range = X:{0, 640}, Y:{0,480}*/
 		
+		
+		/* INITIALIZE */
 		if(reset)
 		begin
-			leftButtonTarget  <= COLUMN_1;
-			upButtonTarget    <= COLUMN_2;
-			rightButtonTarget <= COLUMN_3;
-			downButtonTarget  <= COLUMN_4;
-			tempX = 240;
-			tempY = 440;
+			tempX = 20;
+			tempY = 470;
 		end
-		/* Remove */
+		
+		
+		
+		
+		
+		/* UPDATE */
+		tempY = tempY - 2;
+		
+		/* LIMIT BORDERS */
+		if(tempY <= 0)
+			tempY = 490;
+		if(tempY >= 490)
+			tempY = 490;
+		tempX = 20;
+		
+		positionX <= tempX;
+		positionY <= tempY;
+	end
+
+
+	wire R = (CounterY>=(positionY-10) && CounterY<=(positionY+10) &&// CounterX[8:5]==7;
+			 CounterX >= (positionX-10) && CounterX <= (positionX+10)) ;	
+	
+	wire G = leftButtonTarget | upButtonTarget | rightButtonTarget | downButtonTarget;
+	wire B = 0;
+	
+	always @(posedge clk)
+	begin
+		vga_r0 <= R & inDisplayArea;
+		vga_r1 <= R & inDisplayArea;		
+		vga_r2 <= R & inDisplayArea;
+		vga_g <= G & inDisplayArea;
+		vga_b <= B & inDisplayArea;
+	end
+	
+	/*-remove-
 		if(btnD)
 			tempY = tempY+2;
 		if(btnU)
@@ -128,28 +160,7 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, 
 			tempX = tempX+2;
 		if(btnL)
 			tempX = tempX-2;
-		/* End Remove */
-		
-		positionX <= tempX;
-		positionY <= tempY;
-	end
-
-
-	wire R = CounterY>=(positionY-10) && CounterY<=(positionY+10) && 
-			 CounterX >= (positionX-10) && CounterX <= (positionX+10) ;
-		//wire R = CounterY>=(positionY-10) && CounterY<=(positionY+10); //Y Range 
-	//	CounterX >= (positionX-10) && CounterX <= (positionX+10) ; //X Range
-
-	
-	wire G = CounterX>100 && CounterX<200 && CounterY[5:3]==7;
-	wire B = 0;
-	
-	always @(posedge clk)
-	begin
-		vga_r <= R & inDisplayArea;
-		vga_g <= G & inDisplayArea;
-		vga_b <= B & inDisplayArea;
-	end
+		-end remove-*/
 	
 	/////////////////////////////////////////////////////////////////
 	//////////////  	  VGA control ends here 	 ///////////////////
@@ -195,7 +206,7 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r, vga_g, vga_b, Sw0, Sw1, 
 	assign SSD3 = 4'b1111;
 	assign SSD2 = 4'b1111;
 	assign SSD1 = 4'b1111;
-	assign SSD0 = positionY[3:0]; //dunno if i have to change anything here /////////////////////////////////////////////////////////////////////////
+	assign SSD0 = 4'b1111;//positionY[3:0]; //dunno if i have to change anything here /////////////////////////////////////////////////////////////////////////
 	
 	// need a scan clk for the seven segment display 
 	// 191Hz (50MHz / 2^18) works well

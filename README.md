@@ -8,3 +8,8 @@ DDR4URHANDS
 	 -FangZhou said FGPA boards come with SOME debouncing...we can save fine tuning for last 
 	 -write arrow code to replace boxes
 	*****************************\TODO***********************************/
+
+11/21/14
+
+Maybe we want to use 
+(line:39 <vga_demo.v>)	button_clk = DIV_CLK[18];
