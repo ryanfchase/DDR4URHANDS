@@ -72,7 +72,13 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r0, vga_r1, vga_r2, vga_g, 
 	/* Registers */ //(NON BLOCKING)//
 
 	wire leftButtonTarget  = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_1-10) && CounterX <= (COLUMN_1+10));
-	wire upButtonTarget    = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_2-10) && CounterX <= (COLUMN_2+10));
+
+	wire upButtonTarget;   //    = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_2-10) && CounterX <= (COLUMN_2+10));
+	if (CounterX >= ( (COLUMN_3 - 10) && CounterX <= COLUMN_3)
+		upButtonTarget = CounterY >= 10/5*(CounterX - (COLUMN_3 - 5)) + Y_TARGET + 10) && CounterY <= (Y_TARGET + 4);
+	if (CounterX >= (COLUMN_3) && CounterX <= (COLUMN_3 + 5)
+		upButtonTarget = CounterY >= -(10/5)*(CounterX - COLUMN_3) + Y_TARGET + 4 + 10 && CounterY <= (Y_TARGET+4);
+	upButtonTarget = CounterX >= (COLUMN_3 - 5) && CounterX =< (COLUMN_3 + 5);
 	wire rightButtonTarget = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_3-10) && CounterX <= (COLUMN_3+10));
 	wire downButtonTarget  = (CounterY >= (Y_TARGET-10) && CounterY <= (Y_TARGET+10)&& CounterX >= (COLUMN_4-10) && CounterX <= (COLUMN_4+10));
 
@@ -122,7 +128,7 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r0, vga_r1, vga_r2, vga_g, 
 		
 		
 		/* UPDATE */
-		tempY = tempY - 2;
+		tempY = tempY - 6;
 		
 		/* LIMIT BORDERS */
 		if(tempY <= 0)
@@ -136,8 +142,8 @@ module vga_demo(ClkPort, vga_h_sync, vga_v_sync, vga_r0, vga_r1, vga_r2, vga_g, 
 	end
 
 
-	wire R = (CounterY>=(positionY-10) && CounterY<=(positionY+10) &&// CounterX[8:5]==7;
-			 CounterX >= (positionX-10) && CounterX <= (positionX+10)) ;	
+	wire R = // (CounterY>=(positionY-10) && CounterY<=(positionY+10) &&// CounterX[8:5]==7;
+			 //  CounterX >= (positionX-10) && CounterX <= (positionX+10)) ;	
 	
 	wire G = leftButtonTarget | upButtonTarget | rightButtonTarget | downButtonTarget;
 	wire B = 0;
